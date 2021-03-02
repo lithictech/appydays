@@ -3,8 +3,6 @@ require:
   - rubocop-rake
   - rubocop-sequel
 
-inherit_from: .rubocop_todo.yml
-
 AllCops:
   NewCops: enable
   SuggestExtensions: false
@@ -72,8 +70,7 @@ Naming/AccessorMethodName:
 Naming/PredicateName:
   Exclude:
     - 'spec/**/*'
-    - 'lib/webhookdb/spec_helpers.rb'
-    - 'lib/webhookdb/spec_helpers/*.rb'
+    - 'lib/appydays/spec_helpers.rb'
 Naming/MethodParameterName:
   Enabled: false
 

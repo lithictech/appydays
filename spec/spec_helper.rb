@@ -6,13 +6,8 @@
 require "appydays/dotenviable"
 Appydays::Dotenviable.load(default_rack_env: "test")
 
-require "httparty"
-require "rack/test"
-require "rack/test/methods"
 require "rspec"
 require "rspec/json_expectations"
-require "timecop"
-require "webmock/rspec"
 require "appydays/loggable/spec_helpers"
 require "appydays/spec_helpers"
 require "appydays/configurable"

@@ -53,3 +53,4 @@ build-iPhoneSimulator/
 .idea/
 temp/
 .DS_Store
+.tool-versions
