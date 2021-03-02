@@ -14,8 +14,8 @@ require "rspec/json_expectations"
 require "timecop"
 require "webmock/rspec"
 require "appydays/loggable/spec_helpers"
+require "appydays/spec_helpers"
 require "appydays/configurable"
-
 
 RSpec.configure do |config|
   # config.full_backtrace = true
@@ -39,4 +39,5 @@ RSpec.configure do |config|
   config.default_formatter = "doc" if config.files_to_run.one?
 
   config.include(Appydays::Loggable::SpecHelpers)
+  config.include(Appydays::SpecHelpers)
 end

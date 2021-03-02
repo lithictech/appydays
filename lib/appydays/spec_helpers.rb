@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "appydays"
-require "yajl"
 
 RSpec::Matchers.define_negated_matcher(:exclude, :include)
 RSpec::Matchers.define_negated_matcher(:not_include, :include)
@@ -9,16 +8,16 @@ RSpec::Matchers.define_negated_matcher(:not_change, :change)
 RSpec::Matchers.define_negated_matcher(:not_be_nil, :be_nil)
 RSpec::Matchers.define_negated_matcher(:not_be_empty, :be_empty)
 
-module Webhookdb::SpecHelpers
+module Appydays::SpecHelpers
   # The directory to look in for fixture data
   TEST_DATA_DIR = Pathname("spec/data").expand_path
 
-  def self.included(context)
-    context.before(:all) do
-      Webhookdb::Customer.password_hash_cost = 1
-    end
-    super
-  end
+  # def self.included(context)
+  #   context.before(:all) do
+  #     Webhookdb::Customer.password_hash_cost = 1
+  #   end
+  #   super
+  # end
 
   ### Load data from the spec/data directory with the specified +name+,
   ### deserializing it if it's YAML or JSON, and returning it.
@@ -35,7 +34,7 @@ module Webhookdb::SpecHelpers
 
     return case path.extname
       when ".json"
-        Yajl::Parser.parse(rawdata)
+        JSON.parse(rawdata)
       when ".yml", ".yaml"
         YAML.safe_load(rawdata)
       else
@@ -149,10 +148,6 @@ module Webhookdb::SpecHelpers
 
     failure_message do |actual|
       "expected %s to weigh %s" % [self.measured(actual), self.measured(expected)]
-    end
-
-    def measured(s)
-      return Webhookdb::Measure.coerce(s)
     end
   end
 end
