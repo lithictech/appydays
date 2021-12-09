@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "appydays/loggable/request_logger"
+require "appydays/loggable/sidekiq_job_logger"
 
 RSpec.describe Appydays::Loggable do
   it "can set the default log level" do
@@ -179,6 +180,76 @@ RSpec.describe Appydays::Loggable do
         [200, {}, ""]
       end, env: env,)
       expect(lines).to have_a_line_matching(/"trace_id":"[0-9a-z]{8}-/)
+    end
+  end
+
+  describe Appydays::Loggable::SidekiqJobLogger, :db do
+    before(:each) { @slow_secs = 5 }
+    let(:logcls) do
+      slow_secs = @slow_secs
+      Class.new(Appydays::Loggable::SidekiqJobLogger) do
+        attr_accessor :slow_secs
+
+        def self.name
+          return "TestLogger"
+        end
+        define_method(:slow_job_seconds) { slow_secs }
+      end
+    end
+
+    let(:logger) { logcls.new }
+
+    def log(&block)
+      block ||= proc {}
+      lines = capture_logs_from(logcls.logger, formatter: :json) do
+        logger.call({}, nil) do
+          block.call
+        end
+      rescue StandardError => e
+        nil
+      end
+      return lines
+    end
+
+    it "logs a info message for the job" do
+      lines = log
+      expect(lines).to contain_exactly(
+        include_json(
+          level: "info",
+          name: "TestLogger",
+          message: "job_done",
+          duration_ms: be_a(Numeric),
+        ),
+      )
+    end
+
+    it "logs at warn if the time taken is more than the slow job seconds" do
+      @slow_secs = 0
+      lines = log
+      expect(lines).to contain_exactly(
+        include_json(
+          level: "warn",
+          name: "TestLogger",
+          message: "job_done",
+          duration_ms: be_a(Numeric),
+        ),
+      )
+    end
+
+    it "logs at error (but does not log the exception) if the job fails" do
+      lines = log do
+        1 / 0
+      end
+
+      expect(lines).to contain_exactly(
+        include_json(
+          level: "error",
+          name: "TestLogger",
+          message: "job_fail",
+          duration_ms: be_a(Numeric),
+        ),
+      )
+      expect(lines[0]).to_not include("exception")
     end
   end
 end
