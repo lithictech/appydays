@@ -2,14 +2,15 @@ PATH
   remote: .
   specs:
     appydays (0.2.0)
-      dotenv
-      semantic_logger
+      dotenv (~> 2.7)
+      semantic_logger (~> 4.6)
 
 GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.2)
     concurrent-ruby (1.1.9)
+    connection_pool (2.2.5)
     diff-lcs (1.4.4)
     dotenv (2.7.6)
     parallel (1.20.1)
@@ -17,6 +18,7 @@ GEM
       ast (~> 2.4.1)
     rack (2.2.3)
     rainbow (3.0.0)
+    redis (4.5.1)
     regexp_parser (2.1.1)
     rexml (3.2.4)
     rspec (3.10.0)
@@ -55,6 +57,10 @@ GEM
     semantic_logger (4.8.2)
       concurrent-ruby (~> 1.0)
     sequel (5.42.0)
+    sidekiq (6.3.1)
+      connection_pool (>= 2.2.2)
+      rack (~> 2.0)
+      redis (>= 4.2.0)
     unicode-display_width (2.0.0)
 
 PLATFORMS
@@ -62,15 +68,16 @@ PLATFORMS
 
 DEPENDENCIES
   appydays!
-  rack
-  rspec
-  rspec-core
-  rspec-json_expectations
-  rubocop
-  rubocop-performance
-  rubocop-rake
-  rubocop-sequel
-  sequel
+  rack (~> 2.2)
+  rspec (~> 3.10)
+  rspec-core (~> 3.10)
+  rspec-json_expectations (~> 2.2)
+  rubocop (~> 1.11)
+  rubocop-performance (~> 1.10)
+  rubocop-rake (~> 0.5)
+  rubocop-sequel (~> 0.2)
+  sequel (~> 5.0)
+  sidekiq (~> 6.0)
 
 BUNDLED WITH
    2.1.4
