@@ -108,6 +108,17 @@ RSpec.describe Appydays::Configurable do
         expect(cls).to have_attributes(knob: true)
       end
 
+      it "can coerce strings to symbols" do
+        ENV["SYMTEST_KNOB"] = "spam"
+        cls = Class.new do
+          include Appydays::Configurable
+          configurable(:symtest) do
+            setting :knob, :ham
+          end
+        end
+        expect(cls).to have_attributes(knob: :spam)
+      end
+
       it "does not run the converter when using the accessor" do
         cls = Class.new do
           include Appydays::Configurable

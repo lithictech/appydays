@@ -7,7 +7,7 @@ spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.summary = "Provides support for development best practices"
   s.author = "Lithic Tech"
-  s.required_ruby_version = ">= 2.7.2"
+  s.required_ruby_version = ">= 2.7.0"
   s.description = <<~DESC
     appydays provides support for logging and handling environment variables
   DESC

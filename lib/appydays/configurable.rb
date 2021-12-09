@@ -132,6 +132,7 @@ module Appydays::Configurable
       return ->(v) { v.to_s } if default.nil? || default.is_a?(String)
       return ->(v) { v.to_i } if default.is_a?(Integer)
       return ->(v) { v.to_f } if default.is_a?(Float)
+      return ->(v) { v.to_sym } if default.is_a?(Symbol)
       return ->(v) { v.casecmp("true").zero? } if [TrueClass, FalseClass].include?(default.class)
       raise TypeError, "Uncoercable type %p" % [default.class]
     end
