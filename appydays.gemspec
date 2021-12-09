@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
-# rubocop:disable Lint/UselessAssignment
-spec = Gem::Specification.new do |s|
+require_relative "lib/appydays/version"
+
+Gem::Specification.new do |s|
   s.name = "appydays"
-  s.version = "0.1.0"
+  s.version = Appydays::VERSION
   s.platform = Gem::Platform::RUBY
-  s.summary = "Provides support for development best practices"
+  s.summary = "Provides support for env-based configuration, and common structured logging capabilities"
   s.author = "Lithic Tech"
   s.required_ruby_version = ">= 2.7.0"
   s.description = <<~DESC
-    appydays provides support for logging and handling environment variables
+    appydays provides support for env-based configuration, and common structured logging capabilities
   DESC
   s.add_dependency("dotenv")
   s.add_dependency("semantic_logger")
@@ -23,4 +24,3 @@ spec = Gem::Specification.new do |s|
   s.add_development_dependency("rubocop-sequel")
   s.add_development_dependency("sequel")
 end
-# rubocop:enable Lint/UselessAssignment
