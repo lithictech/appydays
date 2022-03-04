@@ -53,3 +53,8 @@ build-iPhoneSimulator/
 .idea/
 temp/
 .DS_Store
+
+.ruby-gemset
+.ruby-version
+.tool-versions
+Gemfile.lock
