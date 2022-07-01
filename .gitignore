@@ -57,4 +57,4 @@ temp/
 .ruby-gemset
 .ruby-version
 .tool-versions
-Gemfile.lock
+*.lock
