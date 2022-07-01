@@ -18,7 +18,6 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
     include Sidekiq::Component
   end
 
-
   Sidekiq.logger = self.logger
 
   def call(item, _queue, &block)
