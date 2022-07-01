@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "sidekiq"
+require "sidekiq/version"
 require "sidekiq/job_logger"
-require "sidekiq/util"
 
 require "appydays/loggable"
 require "appydays/configurable"
@@ -10,7 +10,14 @@ require "appydays/configurable"
 class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
   include Appydays::Configurable
   include Appydays::Loggable
-  include Sidekiq::Util
+  begin
+    require "sidekiq/util"
+    include Sidekiq::Util
+  rescue LoadError
+    require "sidekiq/component"
+    include Sidekiq::Component
+  end
+
 
   Sidekiq.logger = self.logger
 
