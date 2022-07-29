@@ -43,10 +43,10 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
     yield
     duration = self.elapsed(start)
     log_method = duration >= self.slow_job_seconds ? :warn : :info
-    self.logger.send(log_method, "job_done", duration: duration)
+    self.logger.send(log_method, "job_done", duration: duration * 1000)
   rescue StandardError
     # Do not log the error since it is probably a sidekiq retry error
-    self.logger.error("job_fail", duration: self.elapsed(start))
+    self.logger.error("job_fail", duration: self.elapsed(start) * 1000)
     raise
   end
 

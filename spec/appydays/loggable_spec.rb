@@ -223,6 +223,17 @@ RSpec.describe Appydays::Loggable do
       )
     end
 
+    it "logs duration properly (SemanticLogger uses milliseconds)" do
+      lines = log { sleep(0.001) }
+      expect(lines).to contain_exactly(
+        include_json(
+          message: "job_done",
+          duration: start_with("1.").and(end_with("ms")),
+          duration_ms: be >= 1,
+        ),
+      )
+    end
+
     it "logs at warn if the time taken is more than the slow job seconds" do
       @slow_secs = 0
       lines = log

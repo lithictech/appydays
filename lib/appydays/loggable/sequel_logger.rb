@@ -28,7 +28,7 @@ class Sequel::Database
     log_each(
       lwd && (duration >= lwd) ? :warn : sql_log_level,
       proc { "(#{'%0.6fs' % duration}) #{message}" },
-      proc { ["sequel_query", {duration: duration, query: message}] },
+      proc { ["sequel_query", {duration: duration * 1000, query: message}] },
     )
   end
 
