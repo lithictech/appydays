@@ -17,7 +17,11 @@ class Sequel::Database
     log_each(
       :info,
       proc { args ? "#{message}; #{args.inspect}" : message },
-      proc { ["sequel_log", {message: message, args: args}] },
+      proc do
+        o = {message: message}
+        o[:args] = args unless args.nil?
+        ["sequel_log", o]
+      end,
     )
   end
 
@@ -28,7 +32,7 @@ class Sequel::Database
     log_each(
       lwd && (duration >= lwd) ? :warn : sql_log_level,
       proc { "(#{'%0.6fs' % duration}) #{message}" },
-      proc { ["sequel_query", {duration: duration, query: message}] },
+      proc { ["sequel_query", {duration: duration * 1000, query: message}] },
     )
   end
 
