@@ -2,6 +2,8 @@
 
 require "appydays/loggable/request_logger"
 require "appydays/loggable/sidekiq_job_logger"
+require "appydays/loggable/sequel_logger"
+require "sequel"
 
 RSpec.describe Appydays::Loggable do
   it "can set the default log level" do
@@ -261,6 +263,112 @@ RSpec.describe Appydays::Loggable do
         ),
       )
       expect(lines[0]).to_not include("exception")
+    end
+  end
+
+  describe "Sequel Logging" do
+    describe "with structure logging" do
+      def log
+        logger = SemanticLogger[Sequel]
+        db = Sequel.connect("mock://", logger: logger, log_warn_duration: 3)
+        return capture_logs_from(logger, formatter: :json) do
+          yield(db)
+        end
+      end
+
+      it "logs info" do
+        lines = log do |db|
+          db.log_info("hello1")
+          db.log_info("hello2", {x: 1})
+        end
+        expect(lines).to contain_exactly(
+          include_json(
+            level: "info",
+            name: "Sequel",
+            message: "sequel_log",
+            context: {"message" => "hello1"},
+          ),
+          include_json(
+            context: {"message" => "hello2", "args" => {"x" => 1}},
+          ),
+        )
+      end
+
+      it "logs exceptions" do
+        lines = log do |db|
+          db.log_exception(RuntimeError.new("nope"), "msg")
+        end
+        expect(lines).to contain_exactly(
+          include_json(
+            level: "error",
+            message: "sequel_exception",
+            exception: {"name" => "RuntimeError", "message" => "nope", "stack_trace" => nil},
+            context: {"sequel_message" => "msg"},
+          ),
+        )
+      end
+
+      it "logs duration" do
+        lines = log do |db|
+          db.log_duration(4, "slow")
+          db.log_duration(1, "fast")
+        end
+        expect(lines).to contain_exactly(
+          include_json(
+            level: "warn",
+            message: "sequel_query",
+            duration_ms: 4000,
+            duration: "4.000s",
+            context: {"query" => "slow"},
+          ),
+          include_json(
+            level: "info",
+            message: "sequel_query",
+            context: {"query" => "fast"},
+          ),
+        )
+      end
+    end
+
+    describe "with standard logging" do
+      def log
+        device = StringIO.new
+        logger = Logger.new(device)
+        db = Sequel.connect("mock://", logger: logger, log_warn_duration: 3)
+        yield(db)
+        return device.string
+      end
+
+      it "logs info" do
+        lines = log do |db|
+          db.log_info("hello1")
+          db.log_info("hello2", {x: 1})
+        end
+        expect(lines.lines).to contain_exactly(
+          include("INFO -- : hello1\n"),
+          include("INFO -- : hello2; {:x=>1}"),
+        )
+      end
+
+      it "logs exceptions" do
+        lines = log do |db|
+          db.log_exception(RuntimeError.new("nope"), "msg")
+        end
+        expect(lines.lines).to contain_exactly(
+          include("ERROR -- : RuntimeError: nope: msg\n"),
+        )
+      end
+
+      it "logs duration" do
+        lines = log do |db|
+          db.log_duration(4, "slow")
+          db.log_duration(1, "fast")
+        end
+        expect(lines.lines).to contain_exactly(
+          include("INFO -- : (1.000000s) fast\n"),
+          include("WARN -- : (4.000000s) slow\n"),
+        )
+      end
     end
   end
 end

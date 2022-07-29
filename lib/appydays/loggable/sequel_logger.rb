@@ -17,7 +17,11 @@ class Sequel::Database
     log_each(
       :info,
       proc { args ? "#{message}; #{args.inspect}" : message },
-      proc { ["sequel_log", {message: message, args: args}] },
+      proc do
+        o = {message: message}
+        o[:args] = args unless args.nil?
+        ["sequel_log", o]
+      end,
     )
   end
 
