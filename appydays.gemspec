@@ -17,6 +17,8 @@ Gem::Specification.new do |s|
   s.files = Dir["lib/**/*.rb"]
   s.add_dependency("dotenv", "~> 2.7")
   s.add_dependency("semantic_logger", "~> 4.6")
+  s.add_development_dependency("monetize", "~> 1.0")
+  s.add_development_dependency("money", "~> 6.0")
   s.add_development_dependency("rack", "~> 2.2")
   s.add_development_dependency("rspec", "~> 3.10")
   s.add_development_dependency("rspec-core", "~> 3.10")
