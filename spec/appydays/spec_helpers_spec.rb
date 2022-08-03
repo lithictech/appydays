@@ -11,6 +11,9 @@ RSpec.describe Appydays::SpecHelpers do
       expect(lines).to_not have_a_line_matching(/xyz/)
       expect(lines.lines).to_not have_a_line_matching(/xyz/)
     end
+    it "is composable" do
+      expect({x: "a\nb"}).to include(x: have_a_line_matching(/a/))
+    end
   end
 
   describe "have_length" do
@@ -20,6 +23,9 @@ RSpec.describe Appydays::SpecHelpers do
       expect([1, 1]).to have_length(2)
       expect([]).to_not have_length(2)
       expect([1, 2, 3]).to_not have_length(2)
+    end
+    it "is composable" do
+      expect({x: "ab"}).to include(x: have_length(2))
     end
   end
 
@@ -52,11 +58,13 @@ RSpec.describe Appydays::SpecHelpers do
       expect(m).to cost(100)
       expect(m).to_not cost(101)
     end
-
     it "errors if no currency can be found" do
       m = Money.new(100, "USD")
       expect { expect(m).to cost(100) }.to raise_error(Money::Currency::UnknownCurrency)
       expect { expect(m).to cost("1") }.to raise_error(Money::Currency::UnknownCurrency, /Could not parse/)
+    end
+    it "is composable" do
+      expect({x: Money.new(500, "USD")}).to include(x: cost("$5"))
     end
   end
 
@@ -67,15 +75,20 @@ RSpec.describe Appydays::SpecHelpers do
       expect(t).to match_time(t + 0.0001)
       expect(t).to_not match_time(t + 1)
       expect(t).to match_time(t + 2).within(5)
+      expect(t).to match_time(t.to_f)
+      expect(t).to match_time(t.to_i).within(1)
 
       expect(t).to match_time("2025-10-01T5:10:20.456789-07:00")
       expect(t).to match_time("2025-10-01T4:10:20.456789-08:00")
     end
-
     it "matches now" do
       expect(Time.now + 2).to match_time(:now)
       expect(Time.now).to match_time(:now)
       expect(Time.now - 6).to_not match_time(:now)
+    end
+    it "is composable" do
+      expect({x: Time.now}).to include(x: match_time(:now))
+      expect({x: t}).to include(x: match_time(t.to_f))
     end
   end
 end

@@ -19,6 +19,8 @@ module Appydays::SpecHelpers
   #
 
   class HaveALineMatching
+    include RSpec::Matchers::Composable
+
     def initialize(regexp)
       @regexp = regexp
     end
@@ -56,6 +58,8 @@ module Appydays::SpecHelpers
   end
 
   class MatchTime
+    include RSpec::Matchers::Composable
+
     def initialize(expected)
       @expected = expected
       if expected == :now
@@ -70,6 +74,7 @@ module Appydays::SpecHelpers
     def time(s)
       return nil if s.nil?
       return Time.parse(s) if s.is_a?(String)
+      return Time.at(s) if s.is_a?(Numeric)
       return s.to_time
     end
 
