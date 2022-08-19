@@ -308,6 +308,17 @@ RSpec.describe Appydays::Loggable do
         )
       end
 
+      it "logs 'table exists' exceptions at debug" do
+        lines = log do |db|
+          db.log_exception(RuntimeError.new("nope"), "SELECT NULL AS nil FROM sch.foobar LIMIT 1")
+          db.log_exception(RuntimeError.new("nope"), "select null as \"nil\" FROM \"sch\".\"foobar\" LIMIT 1")
+        end
+        expect(lines).to contain_exactly(
+          include_json(level: "debug", message: "sequel_exception"),
+          include_json(level: "debug", message: "sequel_exception"),
+        )
+      end
+
       it "logs duration" do
         lines = log do |db|
           db.log_duration(4, "slow")
