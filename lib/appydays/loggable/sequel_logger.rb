@@ -5,8 +5,9 @@ require "sequel/database/logging"
 
 class Sequel::Database
   def log_exception(exception, message)
+    level = message.match?(/^SELECT NULL AS "?nil"? FROM .* LIMIT 1$/i) ? :debug : :error
     log_each(
-      :error,
+      level,
       proc { "#{exception.class}: #{exception.message.strip if exception.message}: #{message}" },
       proc { ["sequel_exception", {sequel_message: message}, exception] },
     )

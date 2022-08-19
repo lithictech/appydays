@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 RSpec.describe Appydays::Configurable do
+  before(:each) do
+    @orig_keys = ENV.keys
+  end
+  after(:each) do
+    ENV.delete_if { |k| !@orig_keys.include?(k) }
+  end
   describe "configurable" do
     it "raises if no block is given" do
       expect do
@@ -42,6 +48,28 @@ RSpec.describe Appydays::Configurable do
           end
         end
         expect(cls).to have_attributes(knob: "two")
+      end
+
+      it "can use an array of environment keys" do
+        ENV["KNOB2"] = "two"
+        ENV["KNOB3"] = "three"
+        cls = Class.new do
+          include Appydays::Configurable
+          configurable(:hello) do
+            setting :knob, "zero", key: ["KNOB1", "KNOB2", "KNOB3"]
+          end
+        end
+        expect(cls).to have_attributes(knob: "two")
+      end
+
+      it "can use a default if no env keys are found" do
+        cls = Class.new do
+          include Appydays::Configurable
+          configurable(:hello) do
+            setting :knob, "zero", key: ["KNOB1", "KNOB2"]
+          end
+        end
+        expect(cls).to have_attributes(knob: "zero")
       end
 
       it "can convert the value given the converter" do
