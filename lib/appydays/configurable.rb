@@ -86,6 +86,8 @@ module Appydays::Configurable
     #   If convert is passed, that is used as the converter so the default value can be any type.
     # key: The key to lookup the config value from the environment.
     #   If nil, use an auto-generated combo of the configuration key and method name.
+    #   If key is an array, look up each (string) value as a key.
+    #   The first non-nil (ie, `ENV.fetch(x, nil)`) value will be used.
     # convert: If provided, call it with the string value so it can be parsed.
     #   For example, you can parse a string JSON value here.
     #   Convert will not be called with the default value.
@@ -106,7 +108,8 @@ module Appydays::Configurable
       end
 
       key ||= "#{@group_key}_#{name}".upcase
-      env_value = ENV.fetch(key, nil)
+      keys = Array(key)
+      env_value = keys.filter_map { |k| ENV.fetch(k, nil) }.first
       converter = self._converter(default, convert)
       value = env_value.nil? ? default : converter[env_value]
       value = installer._set_value(name, value, side_effect)
