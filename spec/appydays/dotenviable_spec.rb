@@ -28,6 +28,18 @@ RSpec.describe Appydays::Dotenviable do
     expect(env).to include("PORT" => "123")
   end
 
+  it "defaults RACK_ENV to what was used for loading" do
+    env = {"RACK_ENV" => "original"}
+    expect(Dotenv).to receive(:load)
+    described_class.load(env: env)
+    expect(env).to include("RACK_ENV" => "original")
+
+    env = {}
+    expect(Dotenv).to receive(:load)
+    described_class.load(env: env, default_rack_env: "xyz")
+    expect(env).to include("RACK_ENV" => "xyz")
+  end
+
   it "does not reapply the original port if one was loaded" do
     env = {"PORT" => "123"}
     expect(Dotenv).to receive(:load) { env["PORT"] = "456" }
