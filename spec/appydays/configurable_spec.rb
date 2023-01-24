@@ -218,6 +218,23 @@ RSpec.describe Appydays::Configurable do
       expect(side_effect).to contain_exactly(1)
     end
 
+    it "can reset settings using the given parameters as new config values" do
+      side_effect = []
+      cls = Class.new do
+        include Appydays::Configurable
+        configurable(:hello) do
+          setting :knob, 1
+          after_configured do
+            side_effect << self.knob
+          end
+        end
+      end
+      expect(side_effect).to contain_exactly(1)
+      cls.reset_configuration(knob: 12, widget: 5)
+      expect(side_effect).to contain_exactly(1, 12)
+      expect(cls.knob).to eq(12)
+    end
+
     it "can run after_configured hooks explicitly" do
       side_effect = []
       cls = Class.new do

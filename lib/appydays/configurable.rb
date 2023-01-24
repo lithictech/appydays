@@ -49,10 +49,14 @@ module Appydays::Configurable
     end
 
     ##
-    # Restore all settings back to the values they were at config time.
-    # Ie, undoes any manual attribute writes.
-    def reset_configuration
-      self._configuration_installer._reset
+    # Restore all settings back to the values they were at config time
+    # (undoes any manual attribute writes), and runs after_configured hooks.
+    #
+    # overrides can be passed, to apply new manual overrides
+    # before running after_configured hooks.
+    # This is very useful when testing classes that have an after_configured hook.
+    def reset_configuration(overrides={})
+      self._configuration_installer._reset(overrides)
     end
 
     ##
@@ -154,9 +158,10 @@ module Appydays::Configurable
       end
     end
 
-    def _reset
+    def _reset(overrides)
       @settings.each do |k, v|
-        @target.send("#{k}=".to_sym, v)
+        real_v = overrides.fetch(k, v)
+        @target.send("#{k}=".to_sym, real_v)
       end
       self._run_after_configured
     end
