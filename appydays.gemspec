@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
   s.files = Dir["lib/**/*.rb"]
   s.add_dependency("dotenv", "~> 2.7")
   s.add_dependency("semantic_logger", "~> 4.6")
+  s.add_development_dependency("httparty", "~> 0.20")
   s.add_development_dependency("monetize", "~> 1.0")
   s.add_development_dependency("money", "~> 6.0")
   s.add_development_dependency("rack", "~> 2.2")
@@ -29,5 +30,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency("rubocop-sequel", "~> 0.2")
   s.add_development_dependency("sequel", "~> 5.0")
   s.add_development_dependency("sidekiq", "~> 6.0")
+  s.add_development_dependency("webmock", "~> 3.1")
   s.metadata["rubygems_mfa_required"] = "true"
 end

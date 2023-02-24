@@ -3,6 +3,8 @@
 require "appydays/loggable/request_logger"
 require "appydays/loggable/sidekiq_job_logger"
 require "appydays/loggable/sequel_logger"
+require "appydays/loggable/httparty_formatter"
+require "httparty"
 require "sequel"
 
 RSpec.describe Appydays::Loggable do
@@ -380,6 +382,23 @@ RSpec.describe Appydays::Loggable do
           include("WARN -- : (4.000000s) slow\n"),
         )
       end
+    end
+  end
+
+  describe "HTTParty formatter" do
+    it "logs structured request information" do
+      logger = SemanticLogger["http_spec_logging_test"]
+      stub_request(:post, "https://foo/bar").to_return(status: 200, body: "")
+      logs = capture_logs_from(logger, formatter: :json) do
+        HTTParty.post("https://foo/bar", body: {x: 1}, logger: logger, log_format: :appydays)
+      end
+      expect(logs).to contain_exactly(
+        include_json(
+          "message" => "httparty_request",
+          "level" => "info",
+          "context" => include("http_method" => "POST"),
+        ),
+      )
     end
   end
 end

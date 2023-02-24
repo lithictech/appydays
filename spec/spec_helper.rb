@@ -12,6 +12,10 @@ require "appydays/loggable/spec_helpers"
 require "appydays/spec_helpers"
 require "appydays/configurable"
 
+require "webmock/rspec"
+
+WebMock.disable_net_connect!
+
 RSpec.configure do |config|
   # config.full_backtrace = true
 

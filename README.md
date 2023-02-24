@@ -225,5 +225,15 @@ Sidekiq.configure_server do |config|
   config.error_handlers.replace([AppJobLogger::JobLogger.method(:error_handler)])
   config.death_handlers << AppJobLogger::JobLogger.method(:death_handler)
 end
+```
 
+
+### HTTParty
+
+Well structured logs for HTTParty!
+
+```rb
+require 'appydays/loggable/httparty_formatter'
+logger = SemanticLogger["my_app_logger"]
+HTTParty.post("https://foo/bar", body: {x: 1}, logger: logger, log_format: :appydays)
 ```
