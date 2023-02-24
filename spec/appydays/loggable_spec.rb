@@ -269,6 +269,9 @@ RSpec.describe Appydays::Loggable do
   end
 
   describe "Sequel Logging" do
+    after(:each) do
+      Sequel::Database::AppydaysLogger.setdefaults
+    end
     describe "with structure logging" do
       def log
         logger = SemanticLogger[Sequel]
@@ -338,6 +341,64 @@ RSpec.describe Appydays::Loggable do
             level: "info",
             message: "sequel_query",
             context: {"query" => "fast"},
+          ),
+        )
+      end
+
+      it "truncates long messages at debug" do
+        Sequel::Database::AppydaysLogger.truncation_context = 3
+        Sequel::Database::AppydaysLogger.truncation_message = "<truncated>"
+        Sequel::Database::AppydaysLogger.log_full_message_level = :debug
+
+        lines = log do |db|
+          db.log_duration(4, "a" * 3000)
+          db.log_duration(1, "a" * 3000)
+        end
+
+        expect(lines).to contain_exactly(
+          include_json(
+            level: "warn",
+            message: "sequel_query",
+            context: {"query" => "aaa<truncated>aaa", "truncated" => true},
+          ),
+          include_json(
+            level: "debug",
+            message: "sequel_query_debug",
+            context: {"query" => have_length(3000)},
+          ),
+          include_json(
+            level: "info",
+            message: "sequel_query",
+            context: {"query" => "aaa<truncated>aaa", "truncated" => true},
+          ),
+          include_json(
+            level: "debug",
+            message: "sequel_query_debug",
+            context: {"query" => have_length(3000)},
+          ),
+        )
+      end
+
+      it "does not log untruncated messages if log_full_message_level is nil" do
+        Sequel::Database::AppydaysLogger.truncation_context = 3
+        Sequel::Database::AppydaysLogger.truncation_message = "<truncated>"
+        Sequel::Database::AppydaysLogger.log_full_message_level = nil
+
+        lines = log do |db|
+          db.log_duration(4, "a" * 3000)
+          db.log_duration(1, "a" * 3000)
+        end
+
+        expect(lines).to contain_exactly(
+          include_json(
+            level: "warn",
+            message: "sequel_query",
+            context: {"query" => "aaa<truncated>aaa", "truncated" => true},
+          ),
+          include_json(
+            level: "info",
+            message: "sequel_query",
+            context: {"query" => "aaa<truncated>aaa", "truncated" => true},
           ),
         )
       end
