@@ -162,6 +162,13 @@ We love [Sequel](https://github.com/jeremyevans/sequel) and can set your DB logs
 require "appydays/loggable/sequel_logger"
 ```
 
+Note that, by default, very long log messages (> 2000 characters) are truncated,
+and the untruncated message is logged at debug.
+
+You can control this behavior, including the size cutoff, truncation message,
+context, and loging of the untruncated message. Refer to `Sequel::Database::AppydaysLogger`
+for information.
+
 ### Request Loggers
 
 Structured request logging!
@@ -225,5 +232,15 @@ Sidekiq.configure_server do |config|
   config.error_handlers.replace([AppJobLogger::JobLogger.method(:error_handler)])
   config.death_handlers << AppJobLogger::JobLogger.method(:death_handler)
 end
+```
 
+
+### HTTParty
+
+Well structured logs for HTTParty!
+
+```rb
+require 'appydays/loggable/httparty_formatter'
+logger = SemanticLogger["my_app_logger"]
+HTTParty.post("https://foo/bar", body: {x: 1}, logger: logger, log_format: :appydays)
 ```

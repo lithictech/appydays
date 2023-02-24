@@ -3,6 +3,8 @@
 require "appydays/loggable/request_logger"
 require "appydays/loggable/sidekiq_job_logger"
 require "appydays/loggable/sequel_logger"
+require "appydays/loggable/httparty_formatter"
+require "httparty"
 require "sequel"
 
 RSpec.describe Appydays::Loggable do
@@ -267,6 +269,9 @@ RSpec.describe Appydays::Loggable do
   end
 
   describe "Sequel Logging" do
+    after(:each) do
+      Sequel::Database::AppydaysLogger.setdefaults
+    end
     describe "with structure logging" do
       def log
         logger = SemanticLogger[Sequel]
@@ -339,6 +344,64 @@ RSpec.describe Appydays::Loggable do
           ),
         )
       end
+
+      it "truncates long messages at debug" do
+        Sequel::Database::AppydaysLogger.truncation_context = 3
+        Sequel::Database::AppydaysLogger.truncation_message = "<truncated>"
+        Sequel::Database::AppydaysLogger.log_full_message_level = :debug
+
+        lines = log do |db|
+          db.log_duration(4, "a" * 3000)
+          db.log_duration(1, "a" * 3000)
+        end
+
+        expect(lines).to contain_exactly(
+          include_json(
+            level: "warn",
+            message: "sequel_query",
+            context: {"query" => "aaa<truncated>aaa", "truncated" => true},
+          ),
+          include_json(
+            level: "debug",
+            message: "sequel_query_debug",
+            context: {"query" => have_length(3000)},
+          ),
+          include_json(
+            level: "info",
+            message: "sequel_query",
+            context: {"query" => "aaa<truncated>aaa", "truncated" => true},
+          ),
+          include_json(
+            level: "debug",
+            message: "sequel_query_debug",
+            context: {"query" => have_length(3000)},
+          ),
+        )
+      end
+
+      it "does not log untruncated messages if log_full_message_level is nil" do
+        Sequel::Database::AppydaysLogger.truncation_context = 3
+        Sequel::Database::AppydaysLogger.truncation_message = "<truncated>"
+        Sequel::Database::AppydaysLogger.log_full_message_level = nil
+
+        lines = log do |db|
+          db.log_duration(4, "a" * 3000)
+          db.log_duration(1, "a" * 3000)
+        end
+
+        expect(lines).to contain_exactly(
+          include_json(
+            level: "warn",
+            message: "sequel_query",
+            context: {"query" => "aaa<truncated>aaa", "truncated" => true},
+          ),
+          include_json(
+            level: "info",
+            message: "sequel_query",
+            context: {"query" => "aaa<truncated>aaa", "truncated" => true},
+          ),
+        )
+      end
     end
 
     describe "with standard logging" do
@@ -380,6 +443,23 @@ RSpec.describe Appydays::Loggable do
           include("WARN -- : (4.000000s) slow\n"),
         )
       end
+    end
+  end
+
+  describe "HTTParty formatter" do
+    it "logs structured request information" do
+      logger = SemanticLogger["http_spec_logging_test"]
+      stub_request(:post, "https://foo/bar").to_return(status: 200, body: "")
+      logs = capture_logs_from(logger, formatter: :json) do
+        HTTParty.post("https://foo/bar", body: {x: 1}, logger: logger, log_format: :appydays)
+      end
+      expect(logs).to contain_exactly(
+        include_json(
+          "message" => "httparty_request",
+          "level" => "info",
+          "context" => include("http_method" => "POST"),
+        ),
+      )
     end
   end
 end
