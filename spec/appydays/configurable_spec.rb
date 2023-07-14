@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "appydays/configurable/spec_helpers"
+
 RSpec.describe Appydays::Configurable do
   before(:each) do
     @orig_keys = ENV.keys
@@ -248,6 +250,44 @@ RSpec.describe Appydays::Configurable do
       end
       cls.run_after_configured_hooks
       expect(side_effect).to contain_exactly(1, 1)
+    end
+  end
+
+  describe "spec helpers" do
+    describe "reset_configuration metadata" do
+      c1 = Class.new do
+        include Appydays::Configurable
+        configurable(:c1) do
+          setting :x, 1
+        end
+      end
+      c2 = Class.new do
+        include Appydays::Configurable
+        configurable(:c2) do
+          setting :x, 2
+        end
+      end
+      around(:each) do |ex|
+        c1.x = 5
+        c2.x = 6
+        ex.run
+        expect(c1.x).to eq(1)
+      end
+      describe "resets configuration of" do
+        include Appydays::Configurable::SpecHelpers
+        it "a passed class", reset_configuration: c1 do
+          expect(c1.x).to eq(1)
+          expect(c2.x).to eq(6)
+          c1.x = 5
+          c2.x = 6
+        end
+        it "passed classes", reset_configuration: [c1, c2] do
+          expect(c1.x).to eq(1)
+          expect(c2.x).to eq(2)
+          c1.x = 5
+          c2.x = 6
+        end
+      end
     end
   end
 end
