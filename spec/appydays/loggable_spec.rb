@@ -65,6 +65,37 @@ RSpec.describe Appydays::Loggable do
     end
   end
 
+  describe "#with_log_tags" do
+    logger = SemanticLogger[Kernel]
+
+    it "adds log tags to SemanticLogger" do
+      logs = capture_logs_from(logger) do
+        blockresult = described_class.with_log_tags(x: 1) do
+          logger.warn("hi")
+          5
+        end
+        expect(blockresult).to eq(5)
+      end
+      expect(logs).to(contain_exactly(include("{x: 1} Kernel -- hi")))
+    end
+
+    begin
+      require "sentry-ruby"
+
+      describe "with Sentry available" do
+        it "adds log tags to Sentry" do
+          scope = Sentry::Scope.new
+          expect(Sentry).to receive(:configure_scope).and_yield(scope)
+
+          expect(described_class.with_log_tags(x: 1) { 5 }).to eq(5)
+          expect(scope.instance_variable_get(:@extra)).to eq(x: 1)
+        end
+      end
+    rescue LoadError
+      nil
+    end
+  end
+
   describe "spec helpers" do
     logger1 = described_class["spec-helper-test"]
 
