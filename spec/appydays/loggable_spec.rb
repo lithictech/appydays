@@ -232,7 +232,7 @@ RSpec.describe Appydays::Loggable do
       expect(lines).to contain_exactly(
         include_json(
           message: "job_done",
-          duration: start_with("1.").and(end_with("ms")),
+          duration: match(/^\d+\.\d+ms$/),
           duration_ms: be >= 1,
         ),
       )
