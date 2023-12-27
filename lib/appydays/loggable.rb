@@ -72,8 +72,17 @@ module Appydays::Loggable
     SemanticLogger.add_appender(io: $stdout, formatter: format.to_sym)
   end
 
-  def self.with_log_tags(tags, &block)
-    return SemanticLogger.named_tagged(tags, &block)
+  def self.with_log_tags(tags)
+    if defined?(Sentry)
+      Sentry.configure_scope do |scope|
+        scope.set_extras(tags)
+      end
+    end
+    blockresult = nil
+    SemanticLogger.named_tagged(tags) do
+      blockresult = yield
+    end
+    return blockresult
   end
 
   @stderr_appended = false

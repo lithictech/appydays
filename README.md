@@ -234,7 +234,6 @@ Sidekiq.configure_server do |config|
 end
 ```
 
-
 ### HTTParty
 
 Well structured logs for HTTParty!
@@ -244,3 +243,10 @@ require 'appydays/loggable/httparty_formatter'
 logger = SemanticLogger["my_app_logger"]
 HTTParty.post("https://foo/bar", body: {x: 1}, logger: logger, log_format: :appydays)
 ```
+
+
+### Sentry
+
+If Sentry is available, all calls to `with_named_tags` (which configure `SemanticLogger` tags)
+will also set the `extras` on the current Sentry scope. If Sentry is not loaded, or is not active,
+this will noop.
