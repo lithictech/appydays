@@ -46,4 +46,18 @@ RSpec.describe Appydays::Dotenviable do
     described_class.load(env: env)
     expect(env).to include("PORT" => "456")
   end
+
+  it "can load into a separate hash" do
+    ENV["HASHTESTABC"] = "x"
+    File.write(".env.hashtest", "HASHTESTXYZ=a")
+    e = {}
+    described_class.load(rack_env: "hashtest", env: e)
+    expect(e).to include("HASHTESTXYZ" => "a")
+    expect(e).to_not include("HASHTESTABC")
+    expect(ENV.to_h).to_not include("HASHTESTXYZ")
+    expect(ENV.to_h).to include("HASHTESTABC" => "x")
+  ensure
+    File.delete(".env.hashtest")
+    ENV.delete("HASHTESTABC")
+  end
 end

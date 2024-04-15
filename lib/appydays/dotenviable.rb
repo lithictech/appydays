@@ -24,6 +24,13 @@ require "appydays/version"
 # it won't get used, because .env files don't stomp what is already in the environment
 # (we don't want to use `overload`).
 # So we have some trickery to overwrite only PORT.
+#
+# @param rack_env [nil,String] Value like 'development' or 'production' to use to load .env files.
+#   If not given, use +env['RACK_ENV']+ or +default_rack_env+.
+# @param default_rack_env [String] If +env['RACK_ENV']+ is not set, use this value.
+# @param env [Hash] Hash to read and mutate.
+#   Pass in a different hash to load environment variables into it instead of ENV.
+#   Useful for testing, or to get the config for another environment.
 module Appydays::Dotenviable
   def self.load(rack_env: nil, default_rack_env: "development", env: ENV)
     original_port = env.delete("PORT")
@@ -33,7 +40,17 @@ module Appydays::Dotenviable
       ".env.#{rack_env}",
       ".env",
     ]
+    orig_env = nil
+    if env.object_id != ENV.object_id
+      orig_env = ENV.to_h
+      ENV.replace(env)
+    end
     Dotenv.load(*paths)
+    if orig_env
+      env.merge!(ENV)
+      ENV.replace(orig_env)
+    end
+
     env["PORT"] ||= original_port
     env["RACK_ENV"] ||= rack_env
   end
