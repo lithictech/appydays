@@ -213,7 +213,7 @@ RSpec.describe Appydays::Loggable do
       lines = run_app(proc do
         expect(env).to(include("HTTP_TRACE_ID"))
         [200, {}, ""]
-      end, env: env,)
+      end, env:,)
       expect(lines).to have_a_line_matching(/"trace_id":"[0-9a-z]{8}-/)
     end
   end
@@ -306,7 +306,7 @@ RSpec.describe Appydays::Loggable do
     describe "with structure logging" do
       def log
         logger = SemanticLogger[Sequel]
-        db = Sequel.connect("mock://", logger: logger, log_warn_duration: 3)
+        db = Sequel.connect("mock://", logger:, log_warn_duration: 3)
         return capture_logs_from(logger, formatter: :json) do
           yield(db)
         end
@@ -439,7 +439,7 @@ RSpec.describe Appydays::Loggable do
       def log
         device = StringIO.new
         logger = Logger.new(device)
-        db = Sequel.connect("mock://", logger: logger, log_warn_duration: 3)
+        db = Sequel.connect("mock://", logger:, log_warn_duration: 3)
         yield(db)
         return device.string
       end
@@ -482,7 +482,7 @@ RSpec.describe Appydays::Loggable do
       logger = SemanticLogger["http_spec_logging_test"]
       stub_request(:post, "https://foo/bar").to_return(status: 200, body: "")
       logs = capture_logs_from(logger, formatter: :json) do
-        HTTParty.post("https://foo/bar", body: {x: 1}, logger: logger, log_format: :appydays)
+        HTTParty.post("https://foo/bar", body: {x: 1}, logger:, log_format: :appydays)
       end
       expect(logs).to contain_exactly(
         include_json(

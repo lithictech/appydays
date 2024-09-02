@@ -45,7 +45,7 @@ class Sequel::Database
       :info,
       proc { args ? "#{message}; #{args.inspect}" : message },
       proc do
-        o = {message: message}
+        o = {message:}
         o[:args] = args unless args.nil?
         ["sequel_log", o]
       end,
@@ -62,7 +62,7 @@ class Sequel::Database
       proc { "(#{'%0.6fs' % duration}) #{message}" },
       proc do
         query = AppydaysLogger.truncate_message(message)
-        params = {duration: duration * 1000, query: query}
+        params = {duration: duration * 1000, query:}
         if query != message
           params[:truncated] = true
           was_truncated = true

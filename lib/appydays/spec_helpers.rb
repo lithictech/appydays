@@ -85,7 +85,7 @@ module Appydays::SpecHelpers
     end
 
     protected def change_tz(t, zone)
-      return t.change(zone: zone) if t.respond_to?(:change)
+      return t.change(zone:) if t.respond_to?(:change)
       prev_tz = ENV.fetch("TZ", nil)
       begin
         ENV["TZ"] = zone

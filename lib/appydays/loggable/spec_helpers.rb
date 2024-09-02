@@ -36,7 +36,7 @@ module Appydays::Loggable::SpecHelpers
     loggers.each { |log| log.level = level }
 
     io = StringIO.new
-    appender = SemanticLogger.add_appender(io: io, level: level)
+    appender = SemanticLogger.add_appender(io:, level:)
     appender.formatter = formatter if formatter
     begin
       yield
