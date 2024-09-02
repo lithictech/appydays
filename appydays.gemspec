@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.author = "Lithic Tech"
   s.homepage = "https://github.com/lithictech/appydays"
   s.licenses = "MIT"
-  s.required_ruby_version = ">= 2.7.0"
+  s.required_ruby_version = ">= 3.1.0"
   s.description = <<~DESC
     appydays provides support for env-based configuration, and common structured logging capabilities
   DESC

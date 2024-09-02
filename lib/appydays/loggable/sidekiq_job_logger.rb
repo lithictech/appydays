@@ -20,7 +20,7 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
 
   Sidekiq.logger = self.logger
 
-  def call(item, _queue, &block)
+  def call(item, _queue, &)
     start = self.now
     tags = {
       job_class: item["class"],
@@ -28,7 +28,7 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
       thread_id: self.tid,
     }
     self.with_log_tags(tags) do
-      self.call_inner(start, &block)
+      self.call_inner(start, &)
     end
   end
 
