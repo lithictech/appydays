@@ -30,6 +30,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency("rubocop-sequel", "~> 0.3.4")
   s.add_development_dependency("sequel", "~> 5.0")
   s.add_development_dependency("sidekiq", "~> 6.0")
+  s.add_development_dependency("simplecov", "~> 0.22")
   s.add_development_dependency("webmock", "~> 3.1")
   s.metadata["rubygems_mfa_required"] = "true"
 end
