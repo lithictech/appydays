@@ -297,6 +297,72 @@ RSpec.describe Appydays::Loggable do
       )
       expect(lines[0]).to_not include("exception")
     end
+
+    let(:job_ctx) do
+      {
+        context: "Job raised exception",
+        job: {
+          "class" => "App::Async::FailingJobTester",
+          "args" => [{"x" => 1}, "bye"],
+          "retry" => true,
+          "queue" => "default",
+          "jid" => "cb00c4fe9b2f16b72797d35c",
+          "created_at" => 1_567_811_837.798969,
+          "enqueued_at" => 1_567_811_837.79901,
+        },
+        jobstr: "{\"class\":\"App::Async::FailingJobTester\", <etc>",
+      }
+    end
+
+    describe "error_handler" do
+      it "logs an error" do
+        lines = capture_logs_from(described_class.logger, formatter: :json) do
+          described_class.error_handler(RuntimeError.new("hi"), job_ctx)
+        end
+        expect(lines).to contain_exactly(
+          include_json(
+            message: "job_error",
+            exception: {name: "RuntimeError", message: "hi", stack_trace: nil},
+            context: {
+              job_class: "App::Async::FailingJobTester",
+              job_args: {"0": {x: 1}, "1": "bye"},
+              job_id: "cb00c4fe9b2f16b72797d35c",
+            },
+          ),
+        )
+      end
+
+      it "skips contexts without a job" do
+        lines = capture_logs_from(described_class.logger, formatter: :json) do
+          described_class.error_handler(RuntimeError.new("hi"), {})
+        end
+        expect(lines).to contain_exactly(
+          include_json(
+            message: "job_error_no_job",
+            exception: {name: "RuntimeError", message: "hi", stack_trace: nil},
+          ),
+        )
+      end
+    end
+
+    describe "death_handler" do
+      it "logs an error" do
+        lines = capture_logs_from(described_class.logger, formatter: :json) do
+          described_class.death_handler(job_ctx.fetch(:job), RuntimeError.new("hi"))
+        end
+        expect(lines).to contain_exactly(
+          include_json(
+            message: "job_retries_exhausted",
+            exception: {name: "RuntimeError", message: "hi", stack_trace: nil},
+            context: {
+              job_class: "App::Async::FailingJobTester",
+              job_args: {"0": {x: 1}, "1": "bye"},
+              job_id: "cb00c4fe9b2f16b72797d35c",
+            },
+          ),
+        )
+      end
+    end
   end
 
   describe "Sequel Logging" do

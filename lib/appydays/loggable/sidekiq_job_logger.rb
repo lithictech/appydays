@@ -87,7 +87,7 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
       "job_error",
       {
         job_class: job["class"],
-        job_args: job["args"],
+        job_args: self.job_args_to_obj(job["args"]),
         job_retry: job["retry"],
         job_queue: job["queue"],
         job_id: job["jid"],
@@ -103,7 +103,7 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
       "job_retries_exhausted",
       {
         job_class: job["class"],
-        job_args: job["args"],
+        job_args: self.job_args_to_obj(job["args"]),
         job_retry: job["retry"],
         job_queue: job["queue"],
         job_dead: job["dead"],
@@ -117,5 +117,13 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
       },
       ex,
     )
+  end
+
+  # Given a job args array like [arg1, arg2],
+  # return an object like {0: arg1, 1: arg2}.
+  # Some logging systems cannot handle arrays well.
+  def self.job_args_to_obj(args)
+    return args unless args.is_a?(Array)
+    return args.each_with_index.to_h { |a, i| [i.to_s, a] }
   end
 end
