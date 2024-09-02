@@ -65,6 +65,58 @@ RSpec.describe Appydays::Loggable do
     end
   end
 
+  describe ":json_trunc format" do
+    let(:logger1) { described_class["spec-helper-test"] }
+    let(:long_str) { "a" * 200 }
+    let(:opts) do
+      {
+        long: long_str,
+        short: "abc",
+        n: 5,
+        array: [long_str, "abc", 5, [long_str, "abc"]],
+        obj: {long: long_str, n: 5},
+      }
+    end
+
+    it "will not trim if the payload is small enough" do
+      lines = capture_logs_from(logger1, formatter: :json_trunc) do
+        logger1.info("hello", opts)
+      end
+      expect(lines[0]).to have_attributes(length: be_between(1100, 1130))
+    end
+
+    it "will trim large strings if the payload is too large" do
+      lines = capture_logs_from(logger1, formatter: :json_trunc) do
+        SemanticLogger.appenders.first.formatter.truncate_at(100, 5)
+        logger1.info("hello", opts)
+      end
+      expect(lines[0]).to have_attributes(length: be_between(300, 350))
+    end
+
+    def generate_stack_trace(i=0)
+      raise "recursed!" if i > 400
+      generate_stack_trace(i + 1)
+    end
+
+    it "will fold in stack traces" do
+      lines = capture_logs_from(logger1, formatter: :json_trunc) do
+        generate_stack_trace
+      rescue RuntimeError => e
+        logger1.info("hello", e)
+      end
+      expect(lines[0]).to match(%r{:in `generate_stack_trace'","skipped \d\d\d frames","/})
+      expect(lines[0]).to have_attributes(length: be_between(680, 730))
+    end
+
+    it "ignores non-array stack_trace keys" do
+      lines = capture_logs_from(logger1, formatter: :json_trunc) do
+        logger1.info("hello", stack_trace: long_str * 3)
+      end
+      expect(lines[0]).to include("{\"stack_trace\":\"aaaaaaaa")
+      expect(lines[0]).to have_attributes(length: be_between(800, 900))
+    end
+  end
+
   describe "#with_log_tags" do
     logger = SemanticLogger[Kernel]
 

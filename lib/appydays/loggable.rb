@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "semantic_logger"
+require "semantic_logger/formatters/raw"
+require "semantic_logger/formatters/json"
 
 require "appydays/version"
 
@@ -26,6 +28,75 @@ class SemanticLogger::Formatters::Raw
     end
 
     return h
+  end
+end
+
+# SemanticLogger Formatter that truncates large strings in the structured log payload.
+# If the emitted JSON log is longer than +max_message_len+:
+# - the payload is walked,
+# - any strings with a length greater than +max_string_len+ are shortened using +shorten_string+.
+#   Override +shorten_string+ for custom behavior.
+# - any key +:stack_trace+ has its array truncated. Stack traces are very large,
+#   but contain short strings. Override +truncate_stack_trace+ for custom behavior.
+class SemanticLogger::Formatters::JsonTrunc < SemanticLogger::Formatters::Raw
+  attr_accessor :max_message_len, :max_string_len
+
+  def initialize(max_message_len: 1024 * 3, max_string_len: 300, **args)
+    super(**args)
+    @max_message_len = max_message_len
+    @max_string_len = max_string_len
+  end
+
+  def truncate_at(max_message_len, max_string_len)
+    @max_message_len = max_message_len
+    @max_string_len = max_string_len
+  end
+
+  def call(log, logger)
+    r = super
+    rj = r.to_json
+    return rj if rj.length <= @max_message_len
+    rshort = self.trim_long_strings(r)
+    return rshort.to_json
+  end
+
+  def trim_long_strings(v)
+    case v
+      when Hash
+        v.each_with_object({}) do |(hk, hv), memo|
+          memo[hk] =
+            if hk == :stack_trace && hv.is_a?(Array)
+              self.truncate_stack_trace(hv)
+            else
+              self.trim_long_strings(hv)
+            end
+        end
+      when Array
+        v.map { |item| self.trim_long_strings(item) }
+      when String
+        if v.size > @max_string_len
+          self.shorten_string(v)
+        else
+          v
+        end
+      else
+        v
+    end
+  end
+
+  # Given a long string, return the truncated string.
+  # @param v [String]
+  # @return [String]
+  def shorten_string(v)
+    return v[..@max_string_len] + "..."
+  end
+
+  # Given a stack trace array, return the array to log.
+  # @param arr [Array]
+  # @return [Array]
+  def truncate_stack_trace(arr)
+    return arr if arr.length <= 4
+    return [arr[0], arr[1], "skipped #{arr.length - 4} frames", arr[-2], arr[-1]]
   end
 end
 
