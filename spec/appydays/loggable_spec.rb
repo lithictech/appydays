@@ -230,14 +230,19 @@ RSpec.describe Appydays::Loggable do
       expect(lines).to have_a_line_matching(/"level":"error".*"response_status":504/)
     end
 
-    it "adds tags around the execution of the request" do
+    it "adds request_id tag around the execution of the request" do
       logger = SemanticLogger["testlogger"]
       lines = run_app(proc do
                         logger.info("check for tags")
                         [200, {}, ""]
                       end,
                       opts: {slow_request_seconds: 0}, loggers: [logger],)
-      expect(lines).to have_a_line_matching(/"message":"check for tags".*"request_method":/)
+      expect(lines).to have_attributes(length: 2)
+      # This should have request_id, but not the other request tags, like the path
+      expect(lines[0]).to include_json(message: "check for tags", context: include("request_id"))
+      expect(lines[0]).to include_json(context: not_include("request_path"))
+      # This should have all tags
+      expect(lines[1]).to include_json(message: "request_finished", context: include("request_id", "request_path"))
     end
 
     it "adds subclass tags" do
@@ -250,23 +255,49 @@ RSpec.describe Appydays::Loggable do
       expect(lines).to have_a_line_matching(/"my_header_tag":"myval"/)
     end
 
-    it "adds a request id" do
-      lines = run_app(proc { [200, {}, ""] })
-      expect(lines).to have_a_line_matching(/"request_id":"[0-9a-z]{8}-/)
-    end
-
-    it "reads a trace id from headers" do
-      lines = run_app(proc { [200, {}, ""] }, env: {"HTTP_TRACE_ID" => "123xyz"})
-      expect(lines).to have_a_line_matching(/"trace_id":"123xyz"/)
-    end
-
-    it "sets the trace ID header if not set" do
+    it "adds and sets request and trace ids if trace and request headers not set" do
       env = {}
+      trace_id = nil
+      request_id = nil
       lines = run_app(proc do
-        expect(env).to(include("HTTP_TRACE_ID"))
+        trace_id = env.fetch("HTTP_TRACE_ID")
+        request_id = env.fetch("HTTP_X_REQUEST_ID")
         [200, {}, ""]
       end, env:,)
-      expect(lines).to have_a_line_matching(/"trace_id":"[0-9a-z]{8}-/)
+      expect(lines).to contain_exactly(
+        include_json(message: "request_finished", context: include(
+          "trace_id" => trace_id,
+          "request_id" => request_id,
+        ),),
+      )
+    end
+
+    it "reads the request and trace id headers" do
+      env = {"HTTP_TRACE_ID" => "t1", "HTTP_X_REQUEST_ID" => "r1"}
+      lines = run_app(proc do
+        expect(env).to include("HTTP_TRACE_ID" => "t1", "HTTP_X_REQUEST_ID" => "r1")
+        [200, {}, ""]
+      end, env:,)
+      expect(lines).to contain_exactly(
+        include_json(message: "request_finished", context: include(
+          "trace_id" => "t1",
+          "request_id" => "r1",
+        ),),
+      )
+    end
+
+    it "will use the trace id header" do
+      env = {"HTTP_TRACE_ID" => "t1"}
+      lines = run_app(proc do
+        expect(env).to include("HTTP_TRACE_ID" => "t1", "HTTP_X_REQUEST_ID" => have_attributes(length: 36))
+        [200, {}, ""]
+      end, env:,)
+      expect(lines).to contain_exactly(
+        include_json(message: "request_finished", context: include(
+          "trace_id" => "t1",
+          "request_id" => have_attributes(length: 36),
+        ),),
+      )
     end
 
     it "can add log fields to the request_finished message" do

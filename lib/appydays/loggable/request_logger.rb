@@ -42,29 +42,36 @@ class Appydays::Loggable::RequestLogger
     # so clear the request tags first thing.
     self.class.request_tags.clear
     began_at = Time.now
-    request_fields = self._request_tags(env, began_at)
-    status, header, body = SemanticLogger.named_tagged(request_fields) { @app.call(env) }
+    request_id = self._ensure_request_id(env)
+    # Only use the request_id as the context/correllation id for log messages,
+    # otherwise we end up with a lot of log spam.
+    status, header, body = SemanticLogger.named_tagged(request_id:) do
+      @app.call(env)
+    end
     header = Rack::Utils::HeaderHash.new(header)
-    body = Rack::BodyProxy.new(body) { self.log_finished(request_fields, began_at, status, header) }
+    body = Rack::BodyProxy.new(body) { self.log_finished(env, began_at, status, header) }
     [status, header, body]
   rescue StandardError => e
     began_at ||= nil
-    request_fields ||= {}
-    self.log_finished(request_fields, began_at, 599, {}, e)
+    self.log_finished(env, began_at, 599, {}, e)
     raise if @reraise
   end
 
-  protected def _request_tags(env, began_at)
-    req_id = SecureRandom.uuid.to_s
+  protected def _ensure_request_id(env)
+    req_id = env["HTTP_X_REQUEST_ID"] ||= SecureRandom.uuid.to_s
     env["HTTP_TRACE_ID"] ||= req_id
+    return req_id
+  end
+
+  protected def _request_tags(env, began_at)
     h = {
+      request_id: env["HTTP_X_REQUEST_ID"], # Added by _ensure_request_id
+      trace_id: env["HTTP_TRACE_ID"], # Legacy purposes
       remote_addr: env["HTTP_X_FORWARDED_FOR"] || env["REMOTE_ADDR"] || "-",
       request_started_at: began_at.to_s,
       request_method: env[Rack::REQUEST_METHOD],
       request_path: env[Rack::PATH_INFO],
       request_query: env.fetch(Rack::QUERY_STRING, "").empty? ? "" : "?#{env[Rack::QUERY_STRING]}",
-      request_id: req_id,
-      trace_id: env["HTTP_TRACE_ID"],
     }
     h.merge!(self.request_tags(env))
     return h
@@ -74,8 +81,9 @@ class Appydays::Loggable::RequestLogger
     return {}
   end
 
-  protected def log_finished(tags, began_at, status, header, exc=nil)
+  protected def log_finished(env, began_at, status, header, exc=nil)
     elapsed = (Time.now - began_at).to_f
+    tags = self._request_tags(env, began_at)
     tags.merge!(
       response_finished_at: Time.now.iso8601,
       response_status: status,
