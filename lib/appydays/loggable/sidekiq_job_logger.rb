@@ -22,13 +22,8 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
 
   def call(item, _queue, &)
     start = self.now
-    tags = {
-      job_class: item["class"],
-      job_id: item["jid"],
-      thread_id: self.tid,
-    }
-    self.with_log_tags(tags) do
-      self.call_inner(start, &)
+    self.with_log_tags(job_id: item["jid"]) do
+      self.call_inner(item, start, &)
     end
   end
 
@@ -39,14 +34,15 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
     return 5.0
   end
 
-  protected def call_inner(start)
+  protected def call_inner(item, start)
+    extra_tags = {job_class: item["class"], thread_id: self.tid}
     yield
     duration = self.elapsed(start)
     log_method = duration >= self.slow_job_seconds ? :warn : :info
-    self.logger.send(log_method, "job_done", duration: duration * 1000, **self.class.job_tags)
+    self.logger.send(log_method, "job_done", duration: duration * 1000, **extra_tags, **self.class.job_tags)
   rescue StandardError
     # Do not log the error since it is probably a sidekiq retry error
-    self.logger.error("job_fail", duration: self.elapsed(start) * 1000, **self.class.job_tags)
+    self.logger.error("job_fail", duration: self.elapsed(start) * 1000, **extra_tags, **self.class.job_tags)
     raise
   ensure
     self.class.job_tags.clear
@@ -65,7 +61,7 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
   # We do NOT merge the job_tags in with critical errors (death and job_error),
   # since those will log the job args, and they aren't properly tested right now.
   # We may add support in the future.
-  def self.set_job_tags(**tags)
+  def self.set_job_tags(tags)
     Thread.current[:appydays_sidekiq_job_logger_job_tags] ||= {}
     Thread.current[:appydays_sidekiq_job_logger_job_tags].merge!(tags)
   end
