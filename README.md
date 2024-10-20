@@ -234,6 +234,44 @@ Sidekiq.configure_server do |config|
 end
 ```
 
+For most jobs, you'll want to set log tags. Use `with_log_tags` to set tags for a block.
+
+```rb
+class MyJob
+  def perform
+    Appydays::Loggable::SidekiqJobLogger.with_log_tags(some_tag: 'some value') do
+      MyApp.do_thing
+    end
+  end
+end
+# Log messages from MyApp#do_thing include the tag {some_tag: 'some value'}
+```
+
+You can also set fields that are logged in the `job_done` (or `job_fail`) message
+that is output when the job is finished.
+This is useful when you want to log the output of the job,
+but not redundantly. Ie, `logger.info "finished_doing_thing", user_id: user.id` along
+with a `"job_done"` message after that (missing `user_id`) is redundant.
+Instead, use `set_job_tags` within the job, so the `"job_done"` message includes them:
+
+```rb
+# WRONG, will result in two messages, "job_done" will not have 'done_count' field
+class MyJob
+  def perform
+    count = MyApp.do_thing
+    self.logger.info "finished_my_thing", done_count: count 
+  end
+end
+
+# RIGHT, will result in one "job_done" message, which will include the 'done_count' field
+class MyJob
+  def perform
+    count = MyApp.do_thing
+    Appydays::Loggable::SidekiqJobLogger.set_job_tags(done_count: count)
+  end
+end
+```
+
 ### HTTParty
 
 Well structured logs for HTTParty!

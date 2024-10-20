@@ -349,6 +349,53 @@ RSpec.describe Appydays::Loggable do
       )
       expect(lines[0]).to_not include("exception")
     end
+
+    it "can add log fields to the job_done message" do
+      lines = log do
+        described_class.set_job_tags(tag1: "hi")
+      end
+      expect(lines).to contain_exactly(
+        include_json(
+          level: "info",
+          name: "TestLogger",
+          message: "job_done",
+          context: include("tag1" => "hi"),
+        ),
+      )
+    end
+
+    it "can add log fields to the job_fail message" do
+      lines = log do
+        described_class.set_job_tags(tag1: "hi")
+        raise "hello"
+      end
+      expect(lines).to contain_exactly(
+        include_json(
+          level: "error",
+          name: "TestLogger",
+          message: "job_fail",
+          context: include("tag1" => "hi"),
+        ),
+      )
+    end
+
+    it "clears job tags after the job" do
+      lines = log do
+        described_class.set_job_tags(tag1: "hi")
+      end
+      expect(lines).to contain_exactly(
+        include_json(
+          context: include("tag1" => "hi"),
+        ),
+      )
+
+      lines = log
+      expect(lines).to contain_exactly(
+        include_json(
+          context: not_include("tag1"),
+        ),
+      )
+    end
   end
 
   describe "Sequel Logging" do
