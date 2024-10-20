@@ -117,7 +117,7 @@ class Appydays::Loggable::RequestLogger
   # This allows you to add useful context to the request without needing
   # a dedicated log message.
   # See README for more info.
-  def self.set_request_tags(**tags)
+  def self.set_request_tags(tags)
     Thread.current[:appydays_request_logger_request_tags] ||= {}
     Thread.current[:appydays_request_logger_request_tags].merge!(tags)
   end
