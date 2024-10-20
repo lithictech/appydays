@@ -197,6 +197,25 @@ app = Rack::Builder.new do |builder|
 end
 ```
 
+You can also set tags just for the current request,
+logged out when the request finishes:
+
+```rb
+# WRONG, will result in two messages, "request_finished" will not have 'thing_id' field
+post :delete do
+  thing = lookup_thing
+  thing.delete
+  logger.info "deleted_thing", thing_id: thing.id
+end
+
+# RIGHT, will result in one "request_finished" message, which will include the 'thing_id' field
+post :delete do
+  thing = lookup_thing
+  RequestLogger.set_request_tags(thing_id: thing.id)
+  thing.delete
+end
+```
+
 ### Sidekiq
 
 ```rb

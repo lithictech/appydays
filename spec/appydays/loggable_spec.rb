@@ -268,6 +268,44 @@ RSpec.describe Appydays::Loggable do
       end, env:,)
       expect(lines).to have_a_line_matching(/"trace_id":"[0-9a-z]{8}-/)
     end
+
+    it "can add log fields to the request_finished message" do
+      lines = run_app(proc do
+        described_class.set_request_tags(abc: "123")
+        [200, {}, ""]
+      end)
+      expect(lines).to contain_exactly(
+        include_json(
+          level: "info",
+          name: "Appydays::Loggable::RequestLogger",
+          message: "request_finished",
+          context: include("abc" => "123"),
+        ),
+      )
+    end
+
+    it "clears tags after the request (even if it raises an error)" do
+      lines = run_app(proc do
+        described_class.set_request_tags(tag1: "a")
+        [200, {}, ""]
+      end)
+      expect(lines).to contain_exactly(include_json(context: include("tag1" => "a")))
+
+      lines = run_app(proc do
+        described_class.set_request_tags(tag2: "a")
+        raise "oops"
+      end)
+      expect(lines).to contain_exactly(include_json(context: include("tag2" => "a")))
+      expect(lines).to contain_exactly(include_json(context: not_include("tag1" => "a")))
+
+      lines = run_app(proc do
+        described_class.set_request_tags(tag3: "a")
+        [400, {}, ""]
+      end)
+      expect(lines).to contain_exactly(include_json(context: include("tag3" => "a")))
+      expect(lines).to contain_exactly(include_json(context: not_include("tag1" => "a")))
+      expect(lines).to contain_exactly(include_json(context: not_include("tag2" => "a")))
+    end
   end
 
   describe Appydays::Loggable::SidekiqJobLogger, :db do
