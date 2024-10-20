@@ -43,11 +43,13 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
     yield
     duration = self.elapsed(start)
     log_method = duration >= self.slow_job_seconds ? :warn : :info
-    self.logger.send(log_method, "job_done", duration: duration * 1000)
+    self.logger.send(log_method, "job_done", duration: duration * 1000, **self.class.job_tags)
   rescue StandardError
     # Do not log the error since it is probably a sidekiq retry error
-    self.logger.error("job_fail", duration: self.elapsed(start) * 1000)
+    self.logger.error("job_fail", duration: self.elapsed(start) * 1000, **self.class.job_tags)
     raise
+  ensure
+    self.class.job_tags.clear
   end
 
   protected def elapsed(start)
@@ -57,6 +59,18 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
   protected def now
     return ::Process.clock_gettime(::Process::CLOCK_MONOTONIC)
   end
+
+  # Set job tags that get logged out in the "job_done" and "job_fail" messages.
+  # See README for more info.
+  # We do NOT merge the job_tags in with critical errors (death and job_error),
+  # since those will log the job args, and they aren't properly tested right now.
+  # We may add support in the future.
+  def self.set_job_tags(**tags)
+    Thread.current[:appydays_sidekiq_job_logger_job_tags] ||= {}
+    Thread.current[:appydays_sidekiq_job_logger_job_tags].merge!(tags)
+  end
+
+  def self.job_tags = Thread.current[:appydays_sidekiq_job_logger_job_tags] || {}
 
   def self.error_handler(ex, ctx)
     # ctx looks like:
