@@ -20,6 +20,14 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
 
   Sidekiq.logger = self.logger
 
+  # Level to log 'job_done' messages at.
+  # Defaults to +:info+.
+  attr_accessor :log_level_job_done
+
+  # Level to log slow jobs at.
+  # Defaults to +:warn+.
+  attr_accessor :log_level_slow_job
+
   def call(item, _queue, &)
     start = self.now
     self.with_log_tags(job_id: item["jid"]) do
@@ -38,7 +46,11 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
     extra_tags = {job_class: item["class"], thread_id: self.tid}
     yield
     duration = self.elapsed(start)
-    log_method = duration >= self.slow_job_seconds ? :warn : :info
+    log_method = if duration >= self.slow_job_seconds
+                   (self.log_level_slow_job || :warn)
+    else
+      (self.log_level_job_done || :info)
+    end
     self.logger.send(log_method, "job_done", duration: duration * 1000, **extra_tags, **self.class.job_tags)
   rescue StandardError
     # Do not log the error since it is probably a sidekiq retry error
