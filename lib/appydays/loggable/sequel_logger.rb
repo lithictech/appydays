@@ -13,12 +13,34 @@ class Sequel::Database
   # Use nil to disable the full message logging.
   module AppydaysLogger
     class << self
-      attr_accessor :truncate_messages_over, :truncation_message, :truncation_context, :log_full_message_level
+      # Messages more than this many characters are truncated.
+      # Defaults to 2000.
+      attr_accessor :truncate_messages_over
+
+      # Placeholder message when truncation occurs.
+      # Defaults to '<truncated>'.
+      attr_accessor :truncation_message
+
+      # How many characters to preserve before and after truncation.
+      # Defaults to 200 (400 total).
+      attr_accessor :truncation_context
+
+      # If set, log the full message at this level when truncation occurs.
+      # For example, a truncated message may be logged at :info,
+      # and the full message logged at +:default+.
+      # Defaults to +nil+ (does not log full messages when truncation occurs).
+      attr_accessor :log_full_message_level
+
+      # Log slow queries at this level.
+      # See +Sequel::Database#log_warn_duration+.
+      # Default to +:warn+.
+      attr_accessor :slow_query_log_level
 
       def setdefaults
         @truncate_messages_over = 2000
-        @truncation_message = "<truncated, full message logged at debug>"
+        @truncation_message = "<truncated>"
         @truncation_context = 200
+        @slow_query_log_level = :warn
       end
 
       def truncate_message(message)
@@ -58,7 +80,7 @@ class Sequel::Database
     lwd = log_warn_duration
     was_truncated = false
     log_each(
-      lwd && (duration >= lwd) ? :warn : sql_log_level,
+      lwd && (duration >= lwd) ? AppydaysLogger.slow_query_log_level : sql_log_level,
       proc { "(#{'%0.6fs' % duration}) #{message}" },
       proc do
         query = AppydaysLogger.truncate_message(message)
