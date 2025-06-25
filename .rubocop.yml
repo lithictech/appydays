@@ -1,4 +1,4 @@
-require:
+plugins:
   - rubocop-performance
   - rubocop-rake
   - rubocop-sequel
@@ -7,6 +7,9 @@ AllCops:
   TargetRubyVersion: 3.2
   NewCops: enable
   SuggestExtensions: false
+
+Gemspec/DevelopmentDependencies:
+  Enabled: false
 
 Layout/ParameterAlignment:
   EnforcedStyle: with_fixed_indentation
@@ -68,15 +71,13 @@ Lint/UselessAssignment:
 # https://rubocop.readthedocs.io/en/latest/cops_naming/
 Naming/AccessorMethodName:
   Enabled: false
-Naming/PredicateName:
+Naming/PredicatePrefix:
   Exclude:
     - 'spec/**/*'
     - 'lib/appydays/spec_helpers.rb'
 Naming/MethodParameterName:
   Enabled: false
 
-Sequel/ColumnDefault:
-  Enabled: false
 Sequel/ConcurrentIndex:
   Enabled: false
 
@@ -96,7 +97,7 @@ Style/Documentation:
 Style/FormatString:
   EnforcedStyle: percent
 Style/NumericPredicate:
-  IgnoredMethods: ['where']
+  AllowedMethods: ['where']
 Style/RedundantReturn:
   Enabled: false
 Style/RedundantSelf:

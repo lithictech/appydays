@@ -199,7 +199,7 @@ RSpec.describe Appydays::Loggable do
 
   describe Appydays::Loggable::RequestLogger do
     def run_app(app, opts: {}, loggers: [], env: {}, cls: Appydays::Loggable::RequestLogger)
-      rl = cls.new(app, **opts.merge(reraise: false))
+      rl = cls.new(app, **opts, reraise: false)
       return capture_logs_from(loggers << rl.logger, formatter: :json) do
         _, _, body = rl.call(env)
         body&.close

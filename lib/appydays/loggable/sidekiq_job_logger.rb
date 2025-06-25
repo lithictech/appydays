@@ -47,9 +47,9 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
     yield
     duration = self.elapsed(start)
     log_method = if duration >= self.slow_job_seconds
-                   (self.log_level_slow_job || :warn)
+                   self.log_level_slow_job || :warn
     else
-      (self.log_level_job_done || :info)
+      self.log_level_job_done || :info
     end
     self.logger.send(log_method, "job_done", duration: duration * 1000, **extra_tags, **self.class.job_tags)
   rescue StandardError

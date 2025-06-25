@@ -7,7 +7,7 @@ module Appydays::Loggable::SpecHelpers
     # Appydays::Loggable.ensure_stderr_appender
 
     context.around(:each) do |example|
-      override_level = (example.metadata[:log] || example.metadata[:logging])
+      override_level = example.metadata[:log] || example.metadata[:logging]
       if override_level
         orig_level = SemanticLogger.default_level
         SemanticLogger.default_level = override_level
