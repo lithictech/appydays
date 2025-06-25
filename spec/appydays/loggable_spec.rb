@@ -623,9 +623,11 @@ RSpec.describe Appydays::Loggable do
           db.log_info("hello1")
           db.log_info("hello2", {x: 1})
         end
+        tags = "{x: 1}"
+        tags = "{:x=>1}" if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.4.0")
         expect(lines.lines).to contain_exactly(
           include("INFO -- : hello1\n"),
-          include("INFO -- : hello2; {x: 1}"),
+          include("INFO -- : hello2; #{tags}"),
         )
       end
 
