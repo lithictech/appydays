@@ -104,8 +104,8 @@ RSpec.describe Appydays::Loggable do
       rescue RuntimeError => e
         logger1.info("hello", e)
       end
-      expect(lines[0]).to match(%r{:in `generate_stack_trace'","skipped \d\d\d frames","/})
-      expect(lines[0]).to have_attributes(length: be_between(680, 730))
+      expect(lines[0]).to match(%r{:in '.*generate_stack_trace'","skipped \d\d\d frames","/})
+      expect(lines[0]).to have_attributes(length: be_between(700, 900))
     end
 
     it "ignores non-array stack_trace keys" do
@@ -353,16 +353,16 @@ RSpec.describe Appydays::Loggable do
       end
     end
 
-    let(:logger) { logcls.new }
+    let(:logger) { logcls.new(Sidekiq::Config.new) }
 
-    def log(&block)
+    def log(reraise: true, &block)
       block ||= proc {}
       lines = capture_logs_from(logcls.logger, formatter: :json) do
         logger.call({}, nil) do
           block.call
         end
       rescue StandardError => e
-        nil
+        raise e if reraise
       end
       return lines
     end
@@ -404,7 +404,7 @@ RSpec.describe Appydays::Loggable do
     end
 
     it "logs at error (but does not log the exception) if the job fails" do
-      lines = log do
+      lines = log(reraise: false) do
         1 / 0
       end
 
@@ -434,7 +434,7 @@ RSpec.describe Appydays::Loggable do
     end
 
     it "can add log fields to the job_fail message" do
-      lines = log do
+      lines = log(reraise: false) do
         described_class.set_job_tags(tag1: "hi")
         raise "hello"
       end
@@ -619,7 +619,7 @@ RSpec.describe Appydays::Loggable do
         end
         expect(lines.lines).to contain_exactly(
           include("INFO -- : hello1\n"),
-          include("INFO -- : hello2; {:x=>1}"),
+          include("INFO -- : hello2; {x: 1}"),
         )
       end
 

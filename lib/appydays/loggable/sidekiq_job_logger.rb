@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 require "sidekiq"
-require "sidekiq/version"
+require "sidekiq/component"
 require "sidekiq/job_logger"
+require "sidekiq/version"
 
 require "appydays/loggable"
 require "appydays/configurable"
@@ -10,15 +11,14 @@ require "appydays/configurable"
 class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
   include Appydays::Configurable
   include Appydays::Loggable
-  begin
-    require "sidekiq/util"
-    include Sidekiq::Util
-  rescue LoadError
-    require "sidekiq/component"
-    include Sidekiq::Component
-  end
+  include Sidekiq::Component
 
-  Sidekiq.logger = self.logger
+  Sidekiq.configure_client do |config|
+    config.logger = self.logger
+  end
+  Sidekiq.configure_server do |config|
+    config.logger = self.logger
+  end
 
   # Level to log 'job_done' messages at.
   # Defaults to +:info+.
