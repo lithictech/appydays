@@ -48,7 +48,7 @@ class Appydays::Loggable::RequestLogger
     status, header, body = SemanticLogger.named_tagged(request_id:) do
       @app.call(env)
     end
-    header = Rack::Headers.new(header)
+    header = Rack::Headers[header]
     body = Rack::BodyProxy.new(body) { self.log_finished(env, began_at, status, header) }
     [status, header, body]
   rescue StandardError => e

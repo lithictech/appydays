@@ -104,8 +104,9 @@ RSpec.describe Appydays::Loggable do
       rescue RuntimeError => e
         logger1.info("hello", e)
       end
-      expect(lines[0]).to match(%r{:in '.*generate_stack_trace'","skipped \d\d\d frames","/})
-      expect(lines[0]).to have_attributes(length: be_between(700, 900))
+      # Error format is different between Ruby versions
+      expect(lines[0]).to match(%r{:in .*generate_stack_trace'","skipped \d\d\d frames","/})
+      expect(lines[0]).to have_attributes(length: be_between(600, 900))
     end
 
     it "ignores non-array stack_trace keys" do
@@ -212,6 +213,11 @@ RSpec.describe Appydays::Loggable do
 
       lines = run_app(proc { [400, {}, ""] })
       expect(lines).to have_a_line_matching(/"message":"request_finished".*"response_status":400/)
+    end
+
+    it "logs content length" do
+      lines = run_app(proc { [200, {"content-LENGTH" => "5"}, ""] })
+      expect(lines).to have_a_line_matching(/"response_content_length":"5"/)
     end
 
     it "logs at 599 (or configured value) if something errors" do
