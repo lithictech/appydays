@@ -107,7 +107,7 @@ module Appydays::Configurable
       @target.define_singleton_method(name) do
         self.class_variable_get("@@#{name}")
       end
-      @target.define_singleton_method("#{name}=".to_sym) do |v|
+      @target.define_singleton_method(:"#{name}=") do |v|
         installer._set_value(name, v, side_effect)
       end
 
@@ -136,10 +136,10 @@ module Appydays::Configurable
     def _converter(default, converter)
       return converter if converter
 
-      return ->(v) { v.to_s } if default.nil? || default.is_a?(String)
-      return ->(v) { v.to_i } if default.is_a?(Integer)
-      return ->(v) { v.to_f } if default.is_a?(Float)
-      return ->(v) { v.to_sym } if default.is_a?(Symbol)
+      return lambda(&:to_s) if default.nil? || default.is_a?(String)
+      return lambda(&:to_i) if default.is_a?(Integer)
+      return lambda(&:to_f) if default.is_a?(Float)
+      return lambda(&:to_sym) if default.is_a?(Symbol)
       return ->(v) { v.casecmp("true").zero? } if [TrueClass, FalseClass].include?(default.class)
       raise TypeError, "Uncoercable type %p" % [default.class]
     end
@@ -161,7 +161,7 @@ module Appydays::Configurable
     def _reset(overrides)
       @settings.each do |k, v|
         real_v = overrides.fetch(k, v)
-        @target.send("#{k}=".to_sym, real_v)
+        @target.send(:"#{k}=", real_v)
       end
       self._run_after_configured
     end

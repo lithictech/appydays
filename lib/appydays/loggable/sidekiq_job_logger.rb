@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 require "sidekiq"
-require "sidekiq/version"
+require "sidekiq/component"
 require "sidekiq/job_logger"
+require "sidekiq/version"
 
 require "appydays/loggable"
 require "appydays/configurable"
@@ -10,15 +11,7 @@ require "appydays/configurable"
 class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
   include Appydays::Configurable
   include Appydays::Loggable
-  begin
-    require "sidekiq/util"
-    include Sidekiq::Util
-  rescue LoadError
-    require "sidekiq/component"
-    include Sidekiq::Component
-  end
-
-  Sidekiq.logger = self.logger
+  include Sidekiq::Component
 
   # Level to log 'job_done' messages at.
   # Defaults to +:info+.
@@ -47,9 +40,9 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
     yield
     duration = self.elapsed(start)
     log_method = if duration >= self.slow_job_seconds
-                   (self.log_level_slow_job || :warn)
+                   self.log_level_slow_job || :warn
     else
-      (self.log_level_job_done || :info)
+      self.log_level_job_done || :info
     end
     self.logger.send(log_method, "job_done", duration: duration * 1000, **extra_tags, **self.class.job_tags)
   rescue StandardError
@@ -80,7 +73,7 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
 
   def self.job_tags = Thread.current[:appydays_sidekiq_job_logger_job_tags] || {}
 
-  def self.error_handler(ex, ctx)
+  def self.error_handler(ex, ctx, _config)
     # ctx looks like:
     # {
     # :context=>"Job raised exception",

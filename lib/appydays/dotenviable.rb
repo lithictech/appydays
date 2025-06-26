@@ -41,7 +41,7 @@ module Appydays::Dotenviable
       ".env",
     ]
     orig_env = nil
-    if env.object_id != ENV.object_id
+    unless env.equal?(ENV)
       orig_env = ENV.to_h
       ENV.replace(env)
     end
