@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "appydays/loggable/sidekiq_job_logger"
+require "sidekiq/testing"
 
 RSpec.describe Appydays::Loggable::SidekiqJobLogger do
   before(:each) { @slow_secs = 5 }
@@ -127,5 +128,61 @@ RSpec.describe Appydays::Loggable::SidekiqJobLogger do
         context: not_include("tag1"),
       ),
     )
+  end
+
+  describe "error_handler" do
+    it "handles job errors" do
+      ctx = {
+        context: "Job raised exception",
+        job: {
+          "class" => "App::Async::FailingJobTester",
+          "args" => [
+            {
+              "id" => "e8e03571-9851-4daa-a801-a0b43282f317",
+              "name" => "app.test_failing_job",
+              "payload" => [true],
+            },
+          ],
+          "retry" => true,
+          "queue" => "default",
+          "jid" => "cb00c4fe9b2f16b72797d35c",
+          "created_at" => 1_567_811_837.798969,
+          "enqueued_at" => 1_567_811_837.79901,
+        },
+        jobstr: "{\"class\":\"App::Async::FailingJobTester\", <etc>",
+      }
+      lines = capture_logs_from(described_class.logger, formatter: :json) do
+        described_class.error_handler(RuntimeError.new, ctx, Sidekiq::Config.new)
+      end
+      expect(lines).to contain_exactly(
+        include_json(message: "job_error"),
+      )
+    end
+
+    it "logs an error if the context is bad" do
+      lines = capture_logs_from(described_class.logger, formatter: :json) do
+        described_class.error_handler(RuntimeError.new, {}, Sidekiq::Config.new)
+      end
+      expect(lines).to contain_exactly(
+        include_json(message: "job_error_no_job"),
+      )
+    end
+  end
+
+  describe "death_handler" do
+    it "handles job deaths" do
+      job = {
+        "class" => "App::Async::FailingJobTester",
+        "jid" => "cb00c4fe9b2f16b72797d35c",
+        "created_at" => 1_567_811_837.798969,
+        "enqueued_at" => 1_567_811_837.79901,
+      }
+      lines = capture_logs_from(described_class.logger, formatter: :json) do
+        described_class.death_handler(job, RuntimeError.new)
+      end
+      expect(lines).to contain_exactly(
+        include_json(message: "job_retries_exhausted"),
+      )
+    end
   end
 end

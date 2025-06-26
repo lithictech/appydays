@@ -13,13 +13,6 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
   include Appydays::Loggable
   include Sidekiq::Component
 
-  Sidekiq.configure_client do |config|
-    config.logger = self.logger
-  end
-  Sidekiq.configure_server do |config|
-    config.logger = self.logger
-  end
-
   # Level to log 'job_done' messages at.
   # Defaults to +:info+.
   attr_accessor :log_level_job_done
@@ -80,7 +73,7 @@ class Appydays::Loggable::SidekiqJobLogger < Sidekiq::JobLogger
 
   def self.job_tags = Thread.current[:appydays_sidekiq_job_logger_job_tags] || {}
 
-  def self.error_handler(ex, ctx)
+  def self.error_handler(ex, ctx, _config)
     # ctx looks like:
     # {
     # :context=>"Job raised exception",
