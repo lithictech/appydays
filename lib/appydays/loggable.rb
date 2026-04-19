@@ -166,7 +166,7 @@ module Appydays::Loggable
 
   module Methods
     def with_log_tags(tags, &)
-      return SemanticLogger.named_tagged(tags, &)
+      return Appydays::Loggable.with_log_tags(tags, &)
     end
   end
 end
